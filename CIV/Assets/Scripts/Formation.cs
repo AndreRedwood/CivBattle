@@ -1,37 +1,65 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-public class Formation : MonoBehaviour
+[Serializable]
+public class Formation
 {
 	[SerializeField]
-	private GameObject unitPrefab;
+	private GameObject mainPivot;
+	[SerializeField]
+	private List<GameObject> units;
+	[SerializeField]
+	Vector2[] corners;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-		List<Vector2> list = GenerateFormation(60, 0f, 20);
-		foreach (Vector2 position in list)
-		{
-			GameObject unit = Instantiate(unitPrefab);
-			unit.transform.position = new Vector3(position.x, 0.1f, position.y);
-			unit.transform.eulerAngles = new Vector3(0, 0, 0);
-		}
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
-	public List<Vector2> GenerateFormation(int unitCount, float rotation, int rankWidth = -1)
+	public Formation(GameObject unitPrefab, int unitCount, int formationDepth)
 	{
-		if (rankWidth < 0)
+		corners = new Vector2[4];
+		mainPivot = new GameObject("Formation");
+		mainPivot.transform.position = new Vector3(0, 0, 0);
+		units = new List<GameObject>();
+		for(int i = 0; i < unitCount; i++) 
 		{
-			throw new NotImplementedException();
-			//rankWidth = GetDefultRankWidth(unitCount);
+			GameObject unit = GameObject.Instantiate(unitPrefab);
+			unit.transform.SetParent(mainPivot.transform);
+			units.Add(unit);
+		}
+		List<Vector2> list = GenerateFormation(unitCount, 0f, 3);
+		for(int i = 0; i < unitCount; i++)
+		{
+			units[i].transform.position = new Vector3(list[i].x, 0, list[i].y);
+			units[i].transform.eulerAngles = new Vector3(0, 0, 0);
+		}
+		mainPivot.transform.Rotate(new Vector3(0, 45, 0));
+		mainPivot.AddComponent<FormationHitBox>();
+		mainPivot.GetComponent<FormationHitBox>().SetupHitBox(corners);
+		mainPivot.AddComponent<BoxCollider>();
+		mainPivot.GetComponent<BoxCollider>().center = new Vector3(-4.5f, 1, 0);
+		mainPivot.GetComponent<BoxCollider>().size = new Vector3 (3 * 3, 2, 1.5f * 20);
+	}
+
+	private void PositionFormation(Vector2 newPosition)
+	{
+		//
+	}
+
+	public List<Vector2> GenerateFormation(int unitCount, float rotation, int rankDepth)
+	{
+		int rankWidth = 0;
+		if (unitCount % rankDepth == 0)
+		{
+			rankWidth = unitCount / rankDepth;
+		}
+		else
+		{
+			int i = 0;
+			do
+			{
+				i++;
+			} while (i * rankDepth < unitCount);
+			rankWidth = i;
 		}
 
 		float unitGap = 1.5f;
@@ -84,8 +112,8 @@ public class Formation : MonoBehaviour
 		{
 			lastRankPositions = new Vector2[unitCount % rankWidth];
 			Vector2 lastRankStart = new Vector2(
-				(ranks) * -rankGap * (float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
-				(ranks) * -rankGap * (float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
+				(ranks) * rankGap * (float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
+				(ranks) * rankGap * (float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
 				);
 			float lastRankLength = lastRankPositions.Length * unitGap;
 			lastRankStart += new Vector2(
@@ -103,14 +131,40 @@ public class Formation : MonoBehaviour
 				);
 			}
 		}
+
+		corners[0] = result[0];
+		corners[1] = result[rankWidth - 1];
+
 		if (lastRankPositions != null)
 		{
+			corners[2] = new Vector2(
+					corners[1].x + (rankDepth - 1) * rankGap *
+					(float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
+					corners[1].y + (rankDepth - 1) * rankGap *
+					(float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
+					);
+			corners[3] = new Vector2(
+					corners[0].x + (rankDepth - 1) * rankGap *
+					(float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
+					corners[0].y + (rankDepth - 1) * rankGap *
+					(float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
+					);
+
 			foreach (Vector2 position in lastRankPositions)
 			{
 				Vector2 positionPass = position;
 				result.Add(positionPass);
 			}
 		}
+		else
+		{
+			Debug.Log(result[result.Count - 1]);
+			corners[2] = result[result.Count - 1];
+			corners[3] = result[result.Count - rankWidth];
+		}
+
+
+
 		return result;
 	}
 }

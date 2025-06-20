@@ -5,28 +5,19 @@ using UnityEngine;
 public class Map : MonoBehaviour
 {
 	[SerializeField]
-	const int TileSize = 40;
-
+	private GameObject unitPrefab;
 	[SerializeField]
-	private GameObject tilePrefab;
-	[SerializeField]
-	private int mapSize = 10;
+	private int mapSize = 300;
+	public Formation formation;
     // Start is called before the first frame update
     void Start()
     {
-        for(int x = 0; x < mapSize; x++) 
-		{
-			for (int y = 0; y < mapSize; y++)
-			{
-				GameObject tile = Instantiate(tilePrefab);
-				tile.transform.position = new Vector3(x * TileSize, 0, y * TileSize);
-			}
-		}
+		formation = new Formation(unitPrefab, 55, 3);
     }
 
     // Update is called once per frame
     void Update()
     {
-        
+        //
     }
 }
