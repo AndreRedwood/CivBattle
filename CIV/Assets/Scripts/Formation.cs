@@ -33,10 +33,11 @@ public class Formation
 			units[i].transform.eulerAngles = new Vector3(0, 0, 0);
 		}
 		mainPivot.transform.Rotate(new Vector3(0, 45, 0));
+		//caltulating from variables!
 		mainPivot.AddComponent<FormationHitBox>();
 		mainPivot.GetComponent<FormationHitBox>().SetupHitBox(corners);
 		mainPivot.AddComponent<BoxCollider>();
-		mainPivot.GetComponent<BoxCollider>().center = new Vector3(-4.5f, 1, 0);
+		mainPivot.GetComponent<BoxCollider>().center = new Vector3(-3f, 1, 0);
 		mainPivot.GetComponent<BoxCollider>().size = new Vector3 (3 * 3, 2, 1.5f * 20);
 	}
 

@@ -327,8 +327,7 @@ MonoBehaviour:
   formation:
     mainPivot: {fileID: 0}
     units: []
-    width: 0
-    depth: 0
+    corners: []
 --- !u!1 &1403321432
 GameObject:
   m_ObjectHideFlags: 0
