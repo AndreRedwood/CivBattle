@@ -8,16 +8,16 @@ public class Map : MonoBehaviour
 	private GameObject unitPrefab;
 	[SerializeField]
 	private int mapSize = 300;
-	public Formation formation;
+	public Unit formation;
     // Start is called before the first frame update
     void Start()
     {
-		formation = new Formation(unitPrefab, 55, 3);
+		formation = new Unit(unitPrefab, 60, 3);
     }
 
     // Update is called once per frame
     void Update()
     {
-        //
+		//
     }
 }

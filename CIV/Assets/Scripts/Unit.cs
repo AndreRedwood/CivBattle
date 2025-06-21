@@ -5,45 +5,84 @@ using System.Linq;
 using UnityEngine;
 
 [Serializable]
-public class Formation
+public class Unit
 {
 	[SerializeField]
-	private GameObject mainPivot;
+	private Vector2 position = new Vector2(0, 0);
+	public Vector2 Position { get { return position; } }
+	[SerializeField]
+	private float rotationAngle = 0f;
+
+	[SerializeField]
+	private FormationData formation;
+
+	//public int UnitCount { get { return units.Count; } }
+	public int UnitCount { get { return 60; } } //temporaty workaround
+
+	[SerializeField]
+	private int ranks;
+
+	[SerializeField]
+	private UnitManager mainPivot;
 	[SerializeField]
 	private List<GameObject> units;
 	[SerializeField]
 	Vector2[] corners;
 
-	public Formation(GameObject unitPrefab, int unitCount, int formationDepth)
+	public Unit(GameObject unitPrefab, int unitCount, int formationDepth)
 	{
-		corners = new Vector2[4];
-		mainPivot = new GameObject("Formation");
-		mainPivot.transform.position = new Vector3(0, 0, 0);
+		//temporary solution!
+		GameObject mainPivotObject = new GameObject("Formation");
+		//later rework into Soldiers instead of GameObjects
 		units = new List<GameObject>();
-		for(int i = 0; i < unitCount; i++) 
-		{
-			GameObject unit = GameObject.Instantiate(unitPrefab);
-			unit.transform.SetParent(mainPivot.transform);
-			units.Add(unit);
-		}
-		List<Vector2> list = GenerateFormation(unitCount, 0f, 3);
-		for(int i = 0; i < unitCount; i++)
-		{
-			units[i].transform.position = new Vector3(list[i].x, 0, list[i].y);
-			units[i].transform.eulerAngles = new Vector3(0, 0, 0);
-		}
-		mainPivot.transform.Rotate(new Vector3(0, 45, 0));
+		//for (int i = 0; i < unitCount; i++)
+		//{
+		//	GameObject unit = GameObject.Instantiate(unitPrefab);
+		//	unit.transform.SetParent(mainPivotObject.transform);
+		//	units.Add(unit);
+		//}
+
+		ranks = formationDepth;
+		formation = new FormationData(CalculateRows(), ranks, new float[2] { 1.5f, 3 });
+
+		mainPivot = mainPivotObject.AddComponent<UnitManager>();
+		mainPivot.Initialize(unitPrefab, UnitCount, formation);
+
+		corners = new Vector2[4];
+		
+		//List<Vector2> list = GenerateFormation(unitCount, 0f, 3);
+		//for(int i = 0; i < unitCount; i++)
+		//{
+		//	units[i].transform.position = new Vector3(list[i].x, 0, list[i].y);
+		//	units[i].transform.eulerAngles = new Vector3(0, 0, 0);
+		//}
+		mainPivot.SetPosition(new Vector3(position.x, 0, position.y), rotationAngle);
 		//caltulating from variables!
-		mainPivot.AddComponent<FormationHitBox>();
-		mainPivot.GetComponent<FormationHitBox>().SetupHitBox(corners);
-		mainPivot.AddComponent<BoxCollider>();
-		mainPivot.GetComponent<BoxCollider>().center = new Vector3(-3f, 1, 0);
-		mainPivot.GetComponent<BoxCollider>().size = new Vector3 (3 * 3, 2, 1.5f * 20);
 	}
 
-	private void PositionFormation(Vector2 newPosition)
+	private int CalculateRows()
 	{
-		//
+		int result = 0;
+		if (UnitCount % ranks == 0)
+		{
+			result = UnitCount / ranks;
+		}
+		else
+		{
+			int i = 0;
+			do
+			{
+				i++;
+			} while (i * ranks < UnitCount);
+			result = i;
+		}
+		return result;
+	}
+
+	public void MoveFormation(Vector2 newPosition)
+	{
+		position = newPosition;
+		mainPivot.SetPosition(new Vector3(position.x, 0, position.y));
 	}
 
 	public List<Vector2> GenerateFormation(int unitCount, float rotation, int rankDepth)
