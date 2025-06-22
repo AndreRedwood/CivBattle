@@ -10,6 +10,8 @@ public class UnitManager : MonoBehaviour
 	private List<GameObject> models = new List<GameObject>();
 	[SerializeField]
 	private BoxCollider unitHitBox;
+	[SerializeField]
+	private LineRenderer outline;
 
 	[SerializeField]
 	private FormationData formation;
@@ -24,8 +26,12 @@ public class UnitManager : MonoBehaviour
 		//here creating models and placing repositioning them
 		//density[0] - row gap, density[1] - rank gap
 		unitHitBox = this.AddComponent<BoxCollider>();
+		outline = new GameObject("Outline").AddComponent<LineRenderer>();
+		outline.gameObject.layer = LayerMask.NameToLayer("Overlays");
+		outline.transform.SetParent(transform);
 		this.formation = formation;
 		CalculateHitBox();
+		outline.gameObject.SetActive(false);
 
 		for (int i = 0; i < modelCount; i++)
 		{
@@ -41,6 +47,26 @@ public class UnitManager : MonoBehaviour
 	{
 		unitHitBox.size = new Vector3(Ranks * Density[1], 2, Rows * Density[0]);
 		unitHitBox.center = new Vector3(-0.5f * (Ranks - 1) * Density[1], 1, 0f);
+
+		CalculateOutline();
+	}
+
+	private void CalculateOutline()
+	{
+		outline.transform.position = new Vector3(Density[1] * 0.5f, 0.1f, 0);
+		outline.transform.eulerAngles = new Vector3(90, 0, 0);
+		outline.useWorldSpace = false;
+		outline.loop = true;
+		outline.alignment = LineAlignment.TransformZ;
+		Vector3[] corners = new Vector3[4] {
+			new Vector3(0,(Rows * Density[0]) * 0.5f,0),
+			new Vector3(0,(Rows * Density[0]) * -0.5f,0),
+			new Vector3(-Ranks * Density[1],(Rows * Density[0]) * -0.5f,0),
+			new Vector3(-Ranks * Density[1],(Rows * Density[0]) * 0.5f,0)
+		};
+		outline.widthMultiplier = 0.4f;
+		outline.positionCount = 4;
+		outline.SetPositions(corners);
 	}
 
 	public void SetPosition(Vector3 position)
