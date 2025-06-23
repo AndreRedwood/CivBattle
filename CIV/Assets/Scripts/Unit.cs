@@ -5,206 +5,148 @@ using System.Linq;
 using UnityEngine;
 
 [Serializable]
-public class Unit
+public class Unit : MonoBehaviour
 {
 	[SerializeField]
-	private Vector2 position = new Vector2(0, 0);
-	public Vector2 Position { get { return position; } }
+	private List<GameObject> models = new List<GameObject>();
+	public int ModelCount { get { return models.Count; } }
 	[SerializeField]
-	private float rotationAngle = 0f;
+	private BoxCollider unitHitBox;
+	[SerializeField]
+	private LineRenderer outline;
 
 	[SerializeField]
 	private FormationData formation;
 
-	//public int UnitCount { get { return units.Count; } }
-	public int UnitCount { get { return 60; } } //temporaty workaround
+	private int Ranks { get { return formation.Ranks; } }
+	private int Rows { get { return formation.Rows; } }
+	private float Frontage { get { return formation.Frontage; } }
+	private float[] Density { get { return formation.Density; } }
 
 	[SerializeField]
-	private int ranks;
+	private float rotationAngle = 0f;
 
 	[SerializeField]
-	private UnitManager mainPivot;
-	[SerializeField]
-	private List<GameObject> units;
-	[SerializeField]
-	Vector2[] corners;
+	private Vector2[] corners = new Vector2[4];
 
-	public Unit(GameObject unitPrefab, int unitCount, int formationDepth)
+	public void Initialize(GameObject modelPrefab, int modelCount, int formationDepht)
 	{
-		//temporary solution!
-		GameObject mainPivotObject = new GameObject("Formation");
-		//later rework into Soldiers instead of GameObjects
-		units = new List<GameObject>();
-		//for (int i = 0; i < unitCount; i++)
-		//{
-		//	GameObject unit = GameObject.Instantiate(unitPrefab);
-		//	unit.transform.SetParent(mainPivotObject.transform);
-		//	units.Add(unit);
-		//}
+		//throw it out to separate class & function
+		outline = new GameObject("Outline").AddComponent<LineRenderer>();
+		outline.gameObject.layer = LayerMask.NameToLayer("Overlays");
+		outline.transform.SetParent(transform);
+		outline.gameObject.SetActive(false); //maybe just renderer off?
+		//--
 
-		ranks = formationDepth;
-		formation = new FormationData(CalculateRows(), ranks, new float[2] { 1.5f, 3 });
+		//move it to better place
+		formation = new FormationData(FormationData.CalculateRows(modelCount, formationDepht),
+			formationDepht, new float[2] { 1.5f, 3 });
 
-		mainPivot = mainPivotObject.AddComponent<UnitManager>();
-		mainPivot.Initialize(unitPrefab, UnitCount, formation);
+		unitHitBox = gameObject.AddComponent<BoxCollider>();
+		CalculateHitBox();
 
-		corners = new Vector2[4];
-		
-		//List<Vector2> list = GenerateFormation(unitCount, 0f, 3);
-		//for(int i = 0; i < unitCount; i++)
-		//{
-		//	units[i].transform.position = new Vector3(list[i].x, 0, list[i].y);
-		//	units[i].transform.eulerAngles = new Vector3(0, 0, 0);
-		//}
-		mainPivot.SetPosition(new Vector3(position.x, 0, position.y), rotationAngle);
-		//caltulating from variables!
+		//make it first
+		for (int i = 0; i < modelCount; i++)
+		{
+			GameObject model = GameObject.Instantiate(modelPrefab);
+			model.transform.SetParent(transform);
+			models.Add(model);
+		}
+
+		FormUp(ModelCount, Rows, Ranks);
 	}
 
-	private int CalculateRows()
+	private void CalculateHitBox()
 	{
-		int result = 0;
-		if (UnitCount % ranks == 0)
-		{
-			result = UnitCount / ranks;
-		}
-		else
-		{
-			int i = 0;
-			do
-			{
-				i++;
-			} while (i * ranks < UnitCount);
-			result = i;
-		}
-		return result;
+		unitHitBox.size = new Vector3(Ranks * Density[1], 2, Rows * Density[0]);
+		unitHitBox.center = new Vector3(-0.5f * (Ranks - 1) * Density[1], 1, 0f);
+		//separate this
+		CalculateOutline();
 	}
 
-	public void MoveFormation(Vector2 newPosition)
+	private void CalculateOutline()
 	{
-		position = newPosition;
-		mainPivot.SetPosition(new Vector3(position.x, 0, position.y));
+		outline.transform.position = new Vector3(Density[1] * 0.5f, 0.1f, 0);
+		outline.transform.eulerAngles = new Vector3(90, 0, 0);
+		outline.useWorldSpace = false;
+		outline.loop = true;
+		outline.alignment = LineAlignment.TransformZ;
+		Vector3[] corners = new Vector3[4] {
+			new Vector3(0,(Rows * Density[0]) * 0.5f,0),
+			new Vector3(0,(Rows * Density[0]) * -0.5f,0),
+			new Vector3(-Ranks * Density[1],(Rows * Density[0]) * -0.5f,0),
+			new Vector3(-Ranks * Density[1],(Rows * Density[0]) * 0.5f,0)
+		};
+		outline.widthMultiplier = 0.4f;
+		outline.positionCount = 4;
+		outline.SetPositions(corners);
 	}
 
-	public List<Vector2> GenerateFormation(int unitCount, float rotation, int rankDepth)
+	public void SetPosition(Vector3 position)
 	{
-		int rankWidth = 0;
-		if (unitCount % rankDepth == 0)
-		{
-			rankWidth = unitCount / rankDepth;
-		}
-		else
-		{
-			int i = 0;
-			do
-			{
-				i++;
-			} while (i * rankDepth < unitCount);
-			rankWidth = i;
-		}
+		transform.position = position;
+	}
 
-		float unitGap = 1.5f;
-		float rankGap = 3f;
+	public void SetPosition(Vector3 position, float rotation)
+	{
+		transform.position = position;
+		transform.Rotate(new Vector3(0, rotation, 0));
+	}
 
-		int ranks = (unitCount / rankWidth);
-		float rankLength = unitGap * rankWidth;
+	private void FormUp(int modelCount, int rows, int ranks)
+	{
+		int fullRanks = modelCount % ranks == 0 ? ranks : ranks - 1;
+
 		List<Vector2> result = new List<Vector2>();
 
-		if (ranks > 0)
+		if (fullRanks > 0)
 		{
-			Vector2[,] positions = new Vector2[ranks, rankWidth];
+			Vector2[,] positions = new Vector2[fullRanks, rows];
 
-			positions[0, 0] = new Vector2(
-				((rankLength / 2) - (unitGap / 2)) * (float)Math.Round(Mathf.Cos((rotation + 270f) * Mathf.Deg2Rad), 5),
-				((rankLength / 2) - (unitGap / 2)) * (float)Math.Round(Mathf.Sin((rotation + 270f) * Mathf.Deg2Rad), 5)
-				);
+			positions[0, 0] = new Vector2((Frontage / 2) - (Density[0] / 2), 0);
 
-			for (int i = 1; i < rankWidth; i++)
+			for (int currentRank = 0; currentRank < fullRanks; currentRank++)
 			{
-				positions[0, i] = new Vector2(
-				positions[0, i - 1].x + unitGap *
-				(float)Math.Round(Mathf.Cos((rotation + 90f) * Mathf.Deg2Rad), 5),
-				positions[0, i - 1].y + unitGap *
-				(float)Math.Round(Mathf.Sin((rotation + 90f) * Mathf.Deg2Rad), 5)
-				);
-			}
-
-			for (int r = 1; r < ranks; r++)
-			{
-				for (int i = 0; i < rankWidth; i++)
+				for (int placeInRank = 0; placeInRank < rows; placeInRank++)
 				{
-					positions[r, i] = new Vector2(
-					positions[r - 1, i].x + rankGap *
-					(float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
-					positions[r - 1, i].y + rankGap *
-					(float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
-					);
+					positions[currentRank, placeInRank] = new Vector2(
+						-currentRank * Density[1],
+						(placeInRank * Density[0]) - (Frontage * 0.5f) + (Density[0] * 0.5f));
 				}
 			}
-
 			foreach (Vector2 position in positions)
 			{
-				Vector2 positionPass = position;
-				result.Add(positionPass);
+				result.Add(position);
 			}
 		}
 		Vector2[] lastRankPositions = null;
-		if (unitCount % rankWidth != 0)
+		if (modelCount % rows != 0)
 		{
-			lastRankPositions = new Vector2[unitCount % rankWidth];
-			Vector2 lastRankStart = new Vector2(
-				(ranks) * rankGap * (float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
-				(ranks) * rankGap * (float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
-				);
-			float lastRankLength = lastRankPositions.Length * unitGap;
-			lastRankStart += new Vector2(
-				((lastRankLength / 2) - (unitGap / 2)) * (float)Math.Round(Mathf.Cos((rotation + 270f) * Mathf.Deg2Rad), 5),
-				((lastRankLength / 2) - (unitGap / 2)) * (float)Math.Round(Mathf.Sin((rotation + 270f) * Mathf.Deg2Rad), 5)
-				);
-			lastRankPositions[0] = new Vector2(lastRankStart.x, lastRankStart.y);
-			for (int i = 1; i < lastRankPositions.Length; i++)
+			int lefoverModels = modelCount % rows;
+			float lastRankFrontage = lefoverModels * Density[0];
+			lastRankPositions = new Vector2[lefoverModels];
+
+			for (int placeInRank = 0; placeInRank < lefoverModels; placeInRank++)
 			{
-				lastRankPositions[i] = new Vector2(
-				lastRankPositions[i - 1].x + unitGap *
-				(float)Math.Round(Mathf.Cos((rotation + 90f) * Mathf.Deg2Rad), 5),
-				lastRankPositions[i - 1].y + unitGap *
-				(float)Math.Round(Mathf.Sin((rotation + 90f) * Mathf.Deg2Rad), 5)
-				);
+				lastRankPositions[placeInRank] = new Vector2(
+					-fullRanks * Density[1],
+					(placeInRank * Density[0]) - (lastRankFrontage * 0.5f) + (Density[0] * 0.5f));
 			}
-		}
-
-		corners[0] = result[0];
-		corners[1] = result[rankWidth - 1];
-
-		if (lastRankPositions != null)
-		{
-			corners[2] = new Vector2(
-					corners[1].x + (rankDepth - 1) * rankGap *
-					(float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
-					corners[1].y + (rankDepth - 1) * rankGap *
-					(float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
-					);
-			corners[3] = new Vector2(
-					corners[0].x + (rankDepth - 1) * rankGap *
-					(float)Math.Round(Mathf.Cos((rotation + 180f) * Mathf.Deg2Rad), 5),
-					corners[0].y + (rankDepth - 1) * rankGap *
-					(float)Math.Round(Mathf.Sin((rotation + 180f) * Mathf.Deg2Rad), 5)
-					);
-
 			foreach (Vector2 position in lastRankPositions)
 			{
-				Vector2 positionPass = position;
-				result.Add(positionPass);
+				result.Add(position);
 			}
 		}
-		else
+
+		if (models.Count != result.Count)
 		{
-			Debug.Log(result[result.Count - 1]);
-			corners[2] = result[result.Count - 1];
-			corners[3] = result[result.Count - rankWidth];
+			throw new ArgumentException("Number of models and positions doesn't match.");
 		}
 
-
-
-		return result;
+		for (int i = 0; i < models.Count; i++)
+		{
+			models[i].transform.position = new Vector3(result[i].x, 0, result[i].y);
+		}
+		//Generate Formation reworked here
 	}
 }

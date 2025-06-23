@@ -6,6 +6,7 @@ using UnityEngine;
 
 public class UnitManager : MonoBehaviour
 {
+	//Legacy
 	[SerializeField]
 	private List<GameObject> models = new List<GameObject>();
 	[SerializeField]

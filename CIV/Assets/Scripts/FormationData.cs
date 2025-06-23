@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 [Serializable]
 public class FormationData
@@ -16,7 +17,26 @@ public class FormationData
 	{
 		Rows = rows;
 		Ranks = ranks;
-		Density[0] = density[0];
-		Density[1] = density[1];
+		Density[0] = density[0]; //gap between units
+		Density[1] = density[1]; //gap between ranks
+	}
+
+	public static int CalculateRows(int modelCount, int ranks)
+	{
+		int result = 0;
+		if (modelCount % ranks == 0)
+		{
+			result = modelCount / ranks;
+		}
+		else
+		{
+			int i = 0;
+			do
+			{
+				i++;
+			} while (i * ranks < modelCount);
+			result = i;
+		}
+		return result;
 	}
 }
