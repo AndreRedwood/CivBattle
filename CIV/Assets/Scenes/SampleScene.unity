@@ -1360,6 +1360,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6c1622a72eac1cb49806d8465bcab86b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  cam: {fileID: 0}
+  SelectionPanel: {fileID: 1527154414}
+  unitNameLabel: {fileID: 1060829976}
+  unitSkillLabel: {fileID: 2119603419}
+  unitMoraleLabel: {fileID: 1936817436}
   unitPrefab: {fileID: 7311824479452490881, guid: c13d31d388c43e64ab20e4e6b679061a, type: 3}
   clickable:
     serializedVersion: 2
@@ -1369,6 +1374,13 @@ MonoBehaviour:
     m_Bits: 64
   mapSize: 10
   formation: {fileID: 0}
+  templateUnit:
+    Name: Pancerni Banner
+    Speed: 7
+    Armor: 5
+    Skill: 5
+    Morale: 6
+    Nerve: 3
 --- !u!1 &988428170
 GameObject:
   m_ObjectHideFlags: 0
@@ -2404,7 +2416,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1498343385}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 963194229}
+        m_TargetAssemblyTypeName: Map, Assembly-CSharp
+        m_MethodName: DeselectUnit
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 1
 --- !u!114 &1498343385
 MonoBehaviour:
   m_ObjectHideFlags: 0

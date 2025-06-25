@@ -16,6 +16,10 @@ public class Unit : MonoBehaviour
 	private LineRenderer outline;
 
 	[SerializeField]
+	private UnitData unitData;
+	public UnitData UnitData { get { return unitData; } }
+
+	[SerializeField]
 	private FormationData formation;
 
 	private int Ranks { get { return formation.Ranks; } }
@@ -29,8 +33,11 @@ public class Unit : MonoBehaviour
 	[SerializeField]
 	private Vector2[] corners = new Vector2[4];
 
-	public void Initialize(GameObject modelPrefab, int modelCount, int formationDepht)
+	public void Initialize(GameObject modelPrefab, UnitData unitTemplate, int modelCount, int formationDepht)
 	{
+		gameObject.layer = LayerMask.NameToLayer("Clickable");
+		unitData = new UnitData(unitTemplate);
+
 		//throw it out to separate class & function
 		outline = new GameObject("Outline").AddComponent<LineRenderer>();
 		outline.gameObject.layer = LayerMask.NameToLayer("Overlays");
